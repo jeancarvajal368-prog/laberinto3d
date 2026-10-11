@@ -1,1 +1,460 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Laberinto 3D - Bloque Rojo</title>
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    color: white;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    touch-action: none;
+  }
+  h1 {
+    font-size: 1.6rem;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  }
+  #info {
+    font-size: 1.1rem;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.1);
+    padding: 6px 18px;
+    border-radius: 20px;
+  }
+  #game-container {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  }
+  canvas {
+    display: block;
+    background: #2a2a4a;
+  }
+  #controls {
+    margin-top: 16px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  button {
+    background: #e94560;
+    color: white;
+    border: none;
+    padding: 12px 22px;
+    font-size: 1rem;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: transform 0.15s, background 0.2s;
+    min-width: 110px;
+  }
+  button:hover { background: #ff6b81; transform: scale(1.05); }
+  button:active { transform: scale(0.95); }
+  #btn-reset { background: #0f3460; }
+  #btn-reset:hover { background: #1a4a7a; }
+  #message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    padding: 24px 36px;
+    border-radius: 16px;
+    text-align: center;
+    font-size: 1.4rem;
+    display: none;
+    z-index: 10;
+    min-width: 260px;
+  }
+  #message button {
+    margin-top: 16px;
+  }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
 
+<h1>🧱 Laberinto 3D - Bloque Rojo</h1>
+<div id="info">Nivel <span id="level-num">1</span> · Bloques restantes: <span id="remaining">0</span></div>
+
+<div id="game-container">
+  <canvas id="game" width="640" height="480"></canvas>
+  <div id="message">
+    <div id="msg-text"></div>
+    <button id="btn-next">Siguiente nivel</button>
+  </div>
+</div>
+
+<div id="controls">
+  <button id="btn-reset">Reiniciar</button>
+  <button id="btn-menu">Menú de niveles</button>
+</div>
+
+<script>
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const levelNumEl = document.getElementById('level-num');
+const remainingEl = document.getElementById('remaining');
+const messageEl = document.getElementById('message');
+const msgTextEl = document.getElementById('msg-text');
+const btnNext = document.getElementById('btn-next');
+const btnReset = document.getElementById('btn-reset');
+const btnMenu = document.getElementById('btn-menu');
+
+// ========== CONFIGURACIÓN ISOMÉTRICA ==========
+const TILE_W = 54;   // ancho de la base del tile
+const TILE_H = 27;   // altura de la base del tile
+const TILE_Z = 18;   // altura vertical del bloque
+
+// Colores
+const COLORS = {
+  empty: null,
+  floor: '#4a90d9',      // azul
+  path:  '#7ed957',      // verde (bloque que se pisa)
+  player:'#e74c3c',      // rojo
+  goal:  '#f1c40f',      // amarillo (opcional)
+  wall:  '#555577'
+};
+
+// ========== NIVELES ==========
+// 0 = vacío, 1 = bloque que se puede pisar (desaparece)
+// El jugador empieza en la posición 'start'
+const LEVELS = [
+  // Nivel 1 - muy fácil
+  {
+    map: [
+      [1,1,1],
+      [0,0,1],
+      [1,1,1]
+    ],
+    start: {x:0, y:0}
+  },
+  // Nivel 2
+  {
+    map: [
+      [1,1,1,1],
+      [1,0,0,1],
+      [1,1,1,1]
+    ],
+    start: {x:0, y:1}
+  },
+  // Nivel 3
+  {
+    map: [
+      [1,1,1,0],
+      [0,0,1,0],
+      [1,1,1,1],
+      [1,0,0,1]
+    ],
+    start: {x:0, y:0}
+  },
+  // Nivel 4
+  {
+    map: [
+      [1,1,1,1,1],
+      [1,0,0,0,1],
+      [1,1,1,0,1],
+      [0,0,1,0,1],
+      [1,1,1,1,1]
+    ],
+    start: {x:2, y:0}
+  },
+  // Nivel 5
+  {
+    map: [
+      [1,1,1,1,0],
+      [0,0,0,1,0],
+      [1,1,1,1,1],
+      [1,0,0,0,1],
+      [1,1,1,1,1]
+    ],
+    start: {x:0, y:0}
+  },
+  // Nivel 6
+  {
+    map: [
+      [1,1,1,1,1,1],
+      [1,0,0,0,0,1],
+      [1,1,1,1,0,1],
+      [0,0,0,1,0,1],
+      [1,1,1,1,0,1],
+      [1,0,0,0,0,1],
+      [1,1,1,1,1,1]
+    ],
+    start: {x:0, y:3}
+  },
+  // Nivel 7
+  {
+    map: [
+      [1,1,1,0,1,1],
+      [1,0,1,0,1,0],
+      [1,0,1,1,1,0],
+      [1,0,0,0,1,0],
+      [1,1,1,1,1,1]
+    ],
+    start: {x:0, y:0}
+  },
+  // Nivel 8 - más grande
+  {
+    map: [
+      [1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,1],
+      [1,1,1,1,1,0,1],
+      [0,0,0,0,1,0,1],
+      [1,1,1,0,1,0,1],
+      [1,0,1,0,1,0,1],
+      [1,0,1,1,1,1,1]
+    ],
+    start: {x:0, y:0}
+  }
+];
+
+// ========== ESTADO DEL JUEGO ==========
+let currentLevel = 0;
+let grid = [];
+let player = {x:0, y:0};
+let remaining = 0;
+let animating = false;
+let won = false;
+
+// ========== FUNCIONES DE CONVERSIÓN ISOMÉTRICA ==========
+function iso(x, y, z = 0) {
+  // Centro del canvas
+  const offsetX = canvas.width / 2;
+  const offsetY = 90;
+  return {
+    x: offsetX + (x - y) * (TILE_W / 2),
+    y: offsetY + (x + y) * (TILE_H / 2) - z
+  };
+}
+
+// ========== DIBUJAR UN BLOQUE ISOMÉTRICO ==========
+function drawBlock(gx, gy, color, height = TILE_Z) {
+  const p = iso(gx, gy);
+  const top = iso(gx, gy, height);
+
+  // Cara superior
+  ctx.beginPath();
+  ctx.moveTo(top.x, top.y);
+  ctx.lineTo(top.x + TILE_W/2, top.y + TILE_H/2);
+  ctx.lineTo(top.x, top.y + TILE_H);
+  ctx.lineTo(top.x - TILE_W/2, top.y + TILE_H/2);
+  ctx.closePath();
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Cara izquierda
+  ctx.beginPath();
+  ctx.moveTo(top.x - TILE_W/2, top.y + TILE_H/2);
+  ctx.lineTo(top.x, top.y + TILE_H);
+  ctx.lineTo(p.x, p.y + TILE_H);
+  ctx.lineTo(p.x - TILE_W/2, p.y + TILE_H/2);
+  ctx.closePath();
+  ctx.fillStyle = shade(color, -30);
+  ctx.fill();
+  ctx.stroke();
+
+  // Cara derecha
+  ctx.beginPath();
+  ctx.moveTo(top.x + TILE_W/2, top.y + TILE_H/2);
+  ctx.lineTo(top.x, top.y + TILE_H);
+  ctx.lineTo(p.x, p.y + TILE_H);
+  ctx.lineTo(p.x + TILE_W/2, p.y + TILE_H/2);
+  ctx.closePath();
+  ctx.fillStyle = shade(color, -50);
+  ctx.fill();
+  ctx.stroke();
+}
+
+// Oscurecer color
+function shade(hex, percent) {
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) + percent;
+  let g = ((num >> 8) & 0x00FF) + percent;
+  let b = (num & 0x0000FF) + percent;
+  r = Math.max(0, Math.min(255, r));
+  g = Math.max(0, Math.min(255, g));
+  b = Math.max(0, Math.min(255, b));
+  return `#${(r<<16 | g<<8 | b).toString(16).padStart(6,'0')}`;
+}
+
+// ========== CARGAR NIVEL ==========
+function loadLevel(index) {
+  currentLevel = index;
+  const level = LEVELS[index];
+  grid = level.map.map(row => row.slice());
+  player.x = level.start.x;
+  player.y = level.start.y;
+  remaining = 0;
+  for (let y = 0; y < grid.length; y++) {
+    for (let x = 0; x < grid[y].length; x++) {
+      if (grid[y][x] === 1) remaining++;
+    }
+  }
+  // El bloque de inicio también cuenta y se "pisa"
+  if (grid[player.y][player.x] === 1) {
+    grid[player.y][player.x] = 0;
+    remaining--;
+  }
+  won = false;
+  messageEl.style.display = 'none';
+  updateUI();
+  draw();
+}
+
+function updateUI() {
+  levelNumEl.textContent = currentLevel + 1;
+  remainingEl.textContent = remaining;
+}
+
+// ========== DIBUJAR TODO ==========
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Fondo sutil
+  ctx.fillStyle = '#2a2a4a';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const rows = grid.length;
+  const cols = grid[0].length;
+
+  // Dibujar desde atrás hacia adelante (orden isométrico)
+  for (let sum = 0; sum <= rows + cols; sum++) {
+    for (let y = 0; y < rows; y++) {
+      const x = sum - y;
+      if (x < 0 || x >= cols) continue;
+
+      if (grid[y][x] === 1) {
+        drawBlock(x, y, COLORS.path);
+      }
+    }
+  }
+
+  // Dibujar al jugador encima
+  drawBlock(player.x, player.y, COLORS.player, TILE_Z + 6);
+}
+
+// ========== MOVIMIENTO ==========
+function tryMove(dx, dy) {
+  if (animating || won) return;
+
+  const nx = player.x + dx;
+  const ny = player.y + dy;
+
+  // Fuera del mapa
+  if (ny < 0 || ny >= grid.length || nx < 0 || nx >= grid[0].length) return;
+  // No hay bloque
+  if (grid[ny][nx] !== 1) return;
+
+  // Movimiento válido
+  animating = true;
+
+  // Quitar el bloque actual (ya se quitó al empezar, pero por si acaso)
+  // El bloque al que llegamos desaparece
+  grid[ny][nx] = 0;
+  remaining--;
+  player.x = nx;
+  player.y = ny;
+
+  updateUI();
+  draw();
+
+  // ¿Ganó?
+  if (remaining === 0) {
+    setTimeout(() => {
+      won = true;
+      showWin();
+    }, 200);
+  }
+
+  setTimeout(() => { animating = false; }, 120);
+}
+
+function showWin() {
+  if (currentLevel < LEVELS.length - 1) {
+    msgTextEl.innerHTML = `¡Muy bien!<br>Nivel ${currentLevel + 1} completado`;
+    btnNext.textContent = 'Siguiente nivel';
+    btnNext.onclick = () => loadLevel(currentLevel + 1);
+  } else {
+    msgTextEl.innerHTML = '¡Felicidades!<br>¡Completaste todos los niveles!';
+    btnNext.textContent = 'Volver al inicio';
+    btnNext.onclick = () => loadLevel(0);
+  }
+  messageEl.style.display = 'block';
+}
+
+// ========== CONTROLES ==========
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp'    || e.key === 'w' || e.key === 'W') { e.preventDefault(); tryMove(0, -1); }
+  if (e.key === 'ArrowDown'  || e.key === 's' || e.key === 'S') { e.preventDefault(); tryMove(0,  1); }
+  if (e.key === 'ArrowLeft'  || e.key === 'a' || e.key === 'A') { e.preventDefault(); tryMove(-1, 0); }
+  if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') { e.preventDefault(); tryMove( 1, 0); }
+});
+
+// Soporte táctil (swipe)
+let touchStartX = 0, touchStartY = 0;
+canvas.addEventListener('touchstart', e => {
+  const t = e.changedTouches[0];
+  touchStartX = t.clientX;
+  touchStartY = t.clientY;
+}, {passive: true});
+
+canvas.addEventListener('touchend', e => {
+  const t = e.changedTouches[0];
+  const dx = t.clientX - touchStartX;
+  const dy = t.clientY - touchStartY;
+  const absX = Math.abs(dx);
+  const absY = Math.abs(dy);
+  if (Math.max(absX, absY) < 30) return; // swipe muy pequeño
+
+  if (absX > absY) {
+    tryMove(dx > 0 ? 1 : -1, 0);
+  } else {
+    tryMove(0, dy > 0 ? 1 : -1);
+  }
+}, {passive: true});
+
+// Botones
+btnReset.onclick = () => loadLevel(currentLevel);
+btnMenu.onclick = () => {
+  const n = prompt(`Elige un nivel (1-${LEVELS.length}):`, currentLevel + 1);
+  if (n !== null) {
+    const idx = parseInt(n) - 1;
+    if (idx >= 0 && idx < LEVELS.length) loadLevel(idx);
+  }
+};
+
+// Ajustar tamaño del canvas en móviles
+function resize() {
+  const maxW = Math.min(640, window.innerWidth - 20);
+  const scale = maxW / 640;
+  canvas.style.width = maxW + 'px';
+  canvas.style.height = (480 * scale) + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// Iniciar
+loadLevel(0);
+</script>
+</body>
+</html>
