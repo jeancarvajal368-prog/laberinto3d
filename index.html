@@ -2,450 +2,269 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Laberinto 3D - Bloque Rojo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Jugando con el Mister Jean</title>
 <style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-    -webkit-tap-highlight-color: transparent;
-  }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background: linear-gradient(135deg, #1a1a2e, #16213e);
-    color: white;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    touch-action: none;
-  }
-  h1 {
-    font-size: 1.6rem;
-    margin-bottom: 8px;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-  }
-  #info {
-    font-size: 1.1rem;
-    margin-bottom: 10px;
-    background: rgba(255,255,255,0.1);
-    padding: 6px 18px;
-    border-radius: 20px;
-  }
-  #game-container {
-    position: relative;
-    border-radius: 16px;
-    overflow: hidden;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-  }
-  canvas {
-    display: block;
-    background: #2a2a4a;
-    outline: none;
-  }
-  #controls {
-    margin-top: 16px;
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-  button {
-    background: #e94560;
-    color: white;
-    border: none;
-    padding: 12px 22px;
-    font-size: 1rem;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: transform 0.15s, background 0.2s;
-    min-width: 110px;
-  }
-  button:hover { background: #ff6b81; transform: scale(1.05); }
-  button:active { transform: scale(0.95); }
-  #btn-reset { background: #0f3460; }
-  #btn-reset:hover { background: #1a4a7a; }
-  #message {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.85);
-    padding: 24px 36px;
-    border-radius: 16px;
-    text-align: center;
-    font-size: 1.4rem;
-    display: none;
-    z-index: 10;
-    min-width: 260px;
-  }
-  #message button {
-    margin-top: 16px;
-  }
+:root{--bg1:#1a1a2e;--bg2:#16213e;--fg:#fff;--acc:#e94560;--acc2:#ff6b81;--dark:#0f3460;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,var(--bg1),var(--bg2));color:var(--fg);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:12px 8px;gap:10px;touch-action:manipulation;user-select:none}
+h1{font-size:1.5rem;text-shadow:0 2px 8px rgba(0,0,0,.5);text-align:center}
+#info{font-size:1.1rem;background:rgba(255,255,255,.12);padding:6px 18px;border-radius:20px}
+#wrap{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.5);max-width:100%}
+canvas{display:block;background:#2a2a4a;outline:none;touch-action:none}
+#message{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55);z-index:5}
+#box{background:rgba(10,10,30,.95);padding:22px 32px;border-radius:16px;text-align:center;font-size:1.4rem;min-width:240px}
+button{background:var(--acc);color:#fff;border:none;padding:10px 18px;font-size:1rem;border-radius:12px;cursor:pointer;font-weight:600;transition:transform .15s,background .2s}
+button:hover{background:var(--acc2);transform:scale(1.05)}button:active{transform:scale(.95)}
+#box button{margin-top:14px}
+#row{display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap}
+#pad{display:grid;grid-template-columns:repeat(2,64px);grid-template-rows:repeat(2,64px);gap:8px}
+#pad button{font-size:1.7rem;padding:0;background:var(--dark);border-radius:14px}
+#pad button:hover{background:#1a4a7a}
+#side{display:flex;flex-direction:column;gap:8px}
+#side .reset{background:var(--dark)}
+#levels{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;max-width:640px}
+#levels button{width:40px;height:40px;padding:0;background:var(--dark)}
+#levels button.on{background:var(--acc)}
+#levels button.done::after{content:"★";font-size:.6rem;position:relative;top:-10px;left:2px;color:#ffd84d}
+#help{font-size:.85rem;opacity:.75;text-align:center;max-width:560px}
+#hearts{letter-spacing:2px}
+#hearts.hit{animation:pop .6s}
+@keyframes pop{0%{transform:scale(1)}30%{transform:scale(1.8)}100%{transform:scale(1)}}
+#flash{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:4;display:flex;align-items:center;justify-content:center;font-size:5rem;background:radial-gradient(circle,rgba(255,0,40,.15),rgba(255,0,40,.65))}
+#flash.on{animation:fl .9s ease-out}
+@keyframes fl{0%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1)}}
+#wrap.shake{animation:sh .5s}
+@keyframes sh{0%,100%{transform:translateX(0)}15%{transform:translateX(-12px)}30%{transform:translateX(12px)}45%{transform:translateX(-9px)}60%{transform:translateX(9px)}75%{transform:translateX(-4px)}}
 </style>
 </head>
 <body>
+<h1>👨‍🦲 Jugando con el Mister Jean 😄</h1>
+<div id="info">Nivel <span id="level-num">1</span> · Bloques restantes: <span id="remaining">0</span> · <span id="hearts"></span></div>
 
-<h1>🧱 Laberinto 3D - Bloque Rojo</h1>
-<div id="info">Nivel <span id="level-num">1</span> · Bloques restantes: <span id="remaining">0</span></div>
-
-<div id="game-container">
+<div id="wrap">
   <canvas id="game" width="640" height="480" tabindex="0"></canvas>
-  <div id="message">
-    <div id="msg-text"></div>
-    <button id="btn-next">Siguiente nivel</button>
+  <div id="flash"></div><div id="message"><div id="box"><div id="msg-text"></div><button id="btn-next">Siguiente nivel</button></div></div>
+</div>
+
+<div id="row">
+  <div id="pad">
+    <button data-d="-1,0" aria-label="Arriba izquierda">↖</button>
+    <button data-d="0,-1" aria-label="Arriba derecha">↗</button>
+    <button data-d="0,1" aria-label="Abajo izquierda">↙</button>
+    <button data-d="1,0" aria-label="Abajo derecha">↘</button>
+  </div>
+  <div id="side">
+    <button id="btn-undo" class="reset">↩ Deshacer</button>
+    <button id="btn-hint" class="reset">💡 Pista</button>
+    <button id="btn-reset" class="reset">🔄 Reiniciar</button>
+    <button id="btn-mode" class="reset" style="font-size:.8rem"></button>
   </div>
 </div>
-
-<div id="controls">
-  <button id="btn-reset">Reiniciar</button>
-  <button id="btn-menu">Menú de niveles</button>
-</div>
+<div id="levels"></div>
+<div id="help">Pisa todos los bloques verdes sin repetir ninguno. Tienes 3 vidas por nivel: si quedas sin salida o reinicias a mitad de camino, pierdes una. Usa las flechas, los botones ↖↗↙↘ o desliza el dedo.</div>
 
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const levelNumEl = document.getElementById('level-num');
-const remainingEl = document.getElementById('remaining');
-const messageEl = document.getElementById('message');
-const msgTextEl = document.getElementById('msg-text');
-const btnNext = document.getElementById('btn-next');
-const btnReset = document.getElementById('btn-reset');
-const btnMenu = document.getElementById('btn-menu');
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+const TILE_W=54,TILE_H=27,TILE_Z=18;
+const GREEN='#7ed957',RED='#e74c3c';
 
-// ========== CONFIGURACIÓN ISOMÉTRICA ==========
-const TILE_W = 54;
-const TILE_H = 27;
-const TILE_Z = 18;
-
-const COLORS = {
-  path:  '#7ed957',
-  player:'#e74c3c'
-};
-
-// ========== NIVELES CORREGIDOS ==========
-const LEVELS = [
-  // Nivel 1 - muy fácil
-  {
-    map: [
-      [1,1,1],
-      [0,0,1],
-      [1,1,1]
-    ],
-    start: {x:0, y:0}
-  },
-  // Nivel 2
-  {
-    map: [
-      [1,1,1,1],
-      [1,0,0,1],
-      [1,1,1,1]
-    ],
-    start: {x:0, y:1}
-  },
-  // Nivel 3 - CORREGIDO (camino claro y justo)
-  {
-    map: [
-      [1,1,1,1],
-      [1,0,0,1],
-      [1,0,0,1],
-      [1,1,1,1]
-    ],
-    start: {x:0, y:0}
-  },
-  // Nivel 4
-  {
-    map: [
-      [1,1,1,1,1],
-      [1,0,0,0,1],
-      [1,1,1,0,1],
-      [0,0,1,0,1],
-      [1,1,1,1,1]
-    ],
-    start: {x:2, y:0}
-  },
-  // Nivel 5
-  {
-    map: [
-      [1,1,1,1,0],
-      [0,0,0,1,0],
-      [1,1,1,1,1],
-      [1,0,0,0,1],
-      [1,1,1,1,1]
-    ],
-    start: {x:0, y:0}
-  },
-  // Nivel 6
-  {
-    map: [
-      [1,1,1,1,1,1],
-      [1,0,0,0,0,1],
-      [1,1,1,1,0,1],
-      [0,0,0,1,0,1],
-      [1,1,1,1,0,1],
-      [1,0,0,0,0,1],
-      [1,1,1,1,1,1]
-    ],
-    start: {x:0, y:3}
-  },
-  // Nivel 7
-  {
-    map: [
-      [1,1,1,0,1,1],
-      [1,0,1,0,1,0],
-      [1,0,1,1,1,0],
-      [1,0,0,0,1,0],
-      [1,1,1,1,1,1]
-    ],
-    start: {x:0, y:0}
-  },
-  // Nivel 8
-  {
-    map: [
-      [1,1,1,1,1,1,1],
-      [1,0,0,0,0,0,1],
-      [1,1,1,1,1,0,1],
-      [0,0,0,0,1,0,1],
-      [1,1,1,0,1,0,1],
-      [1,0,1,0,1,0,1],
-      [1,0,1,1,1,1,1]
-    ],
-    start: {x:0, y:0}
-  }
+// Todos los niveles verificados: tienen solución (los últimos tienen callejones sin salida)
+const LEVELS=[
+ {map:[[1,1,1],[0,0,1],[1,1,1]],start:{x:0,y:0}},
+ {map:[[1,1,1,1],[1,0,0,1],[1,1,1,1]],start:{x:0,y:1}},
+ {map:[[1,1,1,1],[1,0,0,1],[1,0,0,1],[1,1,1,1]],start:{x:0,y:0}},
+ {map:[[1,1,1,1,1],[1,1,1,1,1],[1,1,1,1,1],[1,0,1,1,1]],start:{x:1,y:0}},
+ {map:[[1,1,1,0,1],[1,1,1,1,1],[1,1,0,1,1],[1,1,1,1,1],[1,1,0,1,1]],start:{x:3,y:4}},
+ {map:[[1,1,1,1,1,1],[1,1,1,1,1,1],[1,1,1,1,1,1],[0,1,1,0,1,1],[1,1,1,1,1,0]],start:{x:4,y:4}},
+ {map:[[1,1,0,1,1,1],[1,1,0,1,1,1],[1,1,1,1,1,0],[1,1,1,1,1,0],[0,1,1,0,1,1],[1,1,1,1,1,1]],start:{x:1,y:3}},
+ {map:[[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,0,0,0,0],[1,1,1,0,0,0,0]],start:{x:3,y:1}},
+ {map:[[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,0,0,1,1,1],[1,1,1,0,0,1,1,1],[1,1,1,1,1,1,1,1]],start:{x:0,y:1}},
+ {map:[[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,0,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1]],start:{x:3,y:6}},
+ {map:[[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,1,1,1,1],[1,1,1,0,1,1,1],[1,1,1,1,1,1,1]],start:{x:5,y:2}},
+ {map:[[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1]],start:{x:2,y:5}}
 ];
 
-// ========== ESTADO ==========
-let currentLevel = 0;
-let grid = [];
-let player = {x:0, y:0};
-let remaining = 0;
-let animating = false;
-let won = false;
+let lives=3,busy=false,queue=[],mode=0,hurtT=-1e9,pt=null;
+let cur=0,floor=[],grid=[],pl={x:0,y:0},from={x:0,y:0},remaining=0,won=false,t0=0,history=[],doneSet=new Set();
+const MOVE_MS=100;
 
-// ========== ISOMÉTRICA ==========
-function iso(x, y, z = 0) {
-  const offsetX = canvas.width / 2;
-  const offsetY = 90;
-  return {
-    x: offsetX + (x - y) * (TILE_W / 2),
-    y: offsetY + (x + y) * (TILE_H / 2) - z
-  };
+function shade(hex,p){const n=parseInt(hex.slice(1),16);
+  const c=v=>Math.max(0,Math.min(255,v+p));
+  return '#'+((c(n>>16)<<16)|(c((n>>8)&255)<<8)|c(n&255)).toString(16).padStart(6,'0');}
+
+// Proyección isométrica; ox/oy se calculan por nivel para centrar
+let ox=0,oy=0,sc=1;
+const iso=(x,y,z=0)=>({x:ox+(x-y)*TILE_W/2,y:oy+(x+y)*TILE_H/2-z});
+
+function fit(){
+  const rows=grid.length,cols=grid[0].length;
+  const w=(rows+cols)*TILE_W/2, h=(rows+cols)*TILE_H/2+TILE_H+TILE_Z+10;
+  sc=Math.min(1.25,(canvas.width-50)/w,(canvas.height-50)/h);
+  ox=(canvas.width/sc)/2+(rows-cols)*TILE_W/4;
+  oy=(canvas.height/sc-h)/2+TILE_Z+10;
 }
 
-function shade(hex, percent) {
-  const num = parseInt(hex.slice(1), 16);
-  let r = Math.max(0, Math.min(255, (num >> 16) + percent));
-  let g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + percent));
-  let b = Math.max(0, Math.min(255, (num & 0x0000FF) + percent));
-  return `#${(r<<16 | g<<8 | b).toString(16).padStart(6,'0')}`;
+function box(gx,gy,color,h,z=0){
+  const b=iso(gx,gy,z),t=iso(gx,gy,z+h),W=TILE_W/2,H=TILE_H/2;
+  ctx.lineWidth=1;ctx.strokeStyle='rgba(0,0,0,.3)';
+  ctx.beginPath();ctx.moveTo(t.x-W,t.y+H);ctx.lineTo(t.x,t.y+TILE_H);ctx.lineTo(b.x,b.y+TILE_H);ctx.lineTo(b.x-W,b.y+H);ctx.closePath();
+  ctx.fillStyle=shade(color,-35);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(t.x+W,t.y+H);ctx.lineTo(t.x,t.y+TILE_H);ctx.lineTo(b.x,b.y+TILE_H);ctx.lineTo(b.x+W,b.y+H);ctx.closePath();
+  ctx.fillStyle=shade(color,-65);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(t.x,t.y);ctx.lineTo(t.x+W,t.y+H);ctx.lineTo(t.x,t.y+TILE_H);ctx.lineTo(t.x-W,t.y+H);ctx.closePath();
+  ctx.fillStyle=color;ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.moveTo(t.x-W*.55,t.y+H*.95);ctx.lineTo(t.x,t.y+TILE_H*.28);ctx.lineTo(t.x+W*.35,t.y+H*.6);
+  ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=2;ctx.stroke();
 }
 
-function drawBlock(gx, gy, color, height = TILE_Z) {
-  const p = iso(gx, gy);
-  const top = iso(gx, gy, height);
-
-  // Cara superior
-  ctx.beginPath();
-  ctx.moveTo(top.x, top.y);
-  ctx.lineTo(top.x + TILE_W/2, top.y + TILE_H/2);
-  ctx.lineTo(top.x, top.y + TILE_H);
-  ctx.lineTo(top.x - TILE_W/2, top.y + TILE_H/2);
-  ctx.closePath();
-  ctx.fillStyle = color;
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  // Cara izquierda
-  ctx.beginPath();
-  ctx.moveTo(top.x - TILE_W/2, top.y + TILE_H/2);
-  ctx.lineTo(top.x, top.y + TILE_H);
-  ctx.lineTo(p.x, p.y + TILE_H);
-  ctx.lineTo(p.x - TILE_W/2, p.y + TILE_H/2);
-  ctx.closePath();
-  ctx.fillStyle = shade(color, -30);
-  ctx.fill();
-  ctx.stroke();
-
-  // Cara derecha
-  ctx.beginPath();
-  ctx.moveTo(top.x + TILE_W/2, top.y + TILE_H/2);
-  ctx.lineTo(top.x, top.y + TILE_H);
-  ctx.lineTo(p.x, p.y + TILE_H);
-  ctx.lineTo(p.x + TILE_W/2, p.y + TILE_H/2);
-  ctx.closePath();
-  ctx.fillStyle = shade(color, -50);
-  ctx.fill();
-  ctx.stroke();
-}
-
-// ========== CARGAR NIVEL ==========
-function loadLevel(index) {
-  currentLevel = index;
-  const level = LEVELS[index];
-  grid = level.map.map(row => row.slice());
-  player.x = level.start.x;
-  player.y = level.start.y;
-  remaining = 0;
-  for (let y = 0; y < grid.length; y++) {
-    for (let x = 0; x < grid[y].length; x++) {
-      if (grid[y][x] === 1) remaining++;
-    }
+function draw(now){
+  const rows=grid.length,cols=grid[0].length;
+  ctx.setTransform(1,0,0,1,0,0);
+  const g=ctx.createLinearGradient(0,0,0,canvas.height);g.addColorStop(0,'#2f2f58');g.addColorStop(1,'#202040');
+  ctx.fillStyle=g;ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.setTransform(sc,0,0,sc,0,0);
+  // piso: celdas ya pisadas quedan como baldosas bajas
+  for(let s=0;s<=rows+cols;s++)for(let y=0;y<rows;y++){const x=s-y;
+    if(x>=0&&x<cols&&floor[y][x]&&!grid[y][x])box(x,y,'#3b3f6e',3);}
+  // animación del jugador
+  const k=Math.min(1,(now-t0)/MOVE_MS),e=k*(2-k);
+  const px=from.x+(pl.x-from.x)*e,py=from.y+(pl.y-from.y)*e;
+  const pd=pl.x+pl.y;
+  for(let s=0;s<=rows+cols;s++){
+    for(let y=0;y<rows;y++){const x=s-y;
+      if(x>=0&&x<cols&&grid[y][x])box(x,y,GREEN,TILE_Z,3);}
+    if(s===pd){const hu=now-hurtT<700,bl=hu&&Math.floor((now-hurtT)/90)%2===0;box(px,py,bl?'#ffffff':RED,TILE_Z+6,3);}
   }
-  // Quitar el bloque de inicio
-  if (grid[player.y][player.x] === 1) {
-    grid[player.y][player.x] = 0;
-    remaining--;
+  if(hintCell&&hintN%2===0){const p=iso(hintCell.x,hintCell.y,3+TILE_Z);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+TILE_W/2,p.y+TILE_H/2);ctx.lineTo(p.x,p.y+TILE_H);ctx.lineTo(p.x-TILE_W/2,p.y+TILE_H/2);ctx.closePath();ctx.fillStyle='#ffd84d';ctx.fill();}
+  if(k<1||now-hurtT<700)requestAnimationFrame(draw);
+}
+const render=()=>requestAnimationFrame(draw);
+
+function load(i,keep){
+  cur=i;if(!keep)lives=3;busy=false;queue=[];hearts();const L=LEVELS[i];
+  floor=L.map.map(r=>r.slice());grid=L.map.map(r=>r.slice());
+  pl={...L.start};from={...pl};won=false;history=[];
+  grid[pl.y][pl.x]=0;
+  remaining=grid.flat().reduce((a,b)=>a+b,0);
+  $('message').style.display='none';
+  fit();ui();t0=-1e9;render();canvas.focus();
+}
+function ui(){
+  $('level-num').textContent=cur+1;$('remaining').textContent=remaining;
+  document.querySelectorAll('#levels button').forEach((b,i)=>{b.classList.toggle('on',i===cur);b.classList.toggle('done',doneSet.has(i));});
+}
+const free=(x,y)=>y>=0&&y<grid.length&&x>=0&&x<grid[0].length&&grid[y][x]===1;
+const stuck=()=>![[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>free(pl.x+dx,pl.y+dy));
+
+function move(dx,dy){
+  if(won||busy)return false;
+  const nx=pl.x+dx,ny=pl.y+dy;
+  if(!free(nx,ny))return false;
+  history.push({x:pl.x,y:pl.y});
+  from={...pl};pl={x:nx,y:ny};grid[ny][nx]=0;remaining--;
+  t0=performance.now();ui();render();
+  if(remaining===0){won=true;queue=[];setTimeout(win,260);}
+  else if(stuck()){queue=[];setTimeout(()=>loseLife(),300);}
+  return true;
+}
+// Cola de entradas: ninguna pulsación se pierde y cada paso espera a que termine el anterior
+function enqueue(dx,dy){if(queue.length<4)queue.push([dx,dy]);pump();}
+function pump(){
+  while(queue.length&&!busy&&!won){
+    const wait=MOVE_MS-(performance.now()-t0);
+    if(wait>0){clearTimeout(pt);pt=setTimeout(pump,wait);return;}
+    const d=queue.shift();move(d[0],d[1]);
   }
-  won = false;
-  messageEl.style.display = 'none';
-  updateUI();
-  draw();
-  canvas.focus(); // Importante para que las flechas funcionen
+}
+function undo(){
+  if(!history.length||won||busy)return;queue=[];
+  const p=history.pop();grid[pl.y][pl.x]=1;remaining++;
+  pl=p;from={...p};t0=-1e9;$('message').style.display='none';ui();render();
+}
+function show(html,label,fn){$('msg-text').innerHTML=html;$('btn-next').textContent=label;$('btn-next').onclick=fn;$('message').style.display='flex';}
+function win(){
+  won=true;doneSet.add(cur);ui();
+  if(cur<LEVELS.length-1)show('¡Muy bien! 🎉<br>Nivel '+(cur+1)+' completado','Siguiente nivel',()=>load(cur+1));
+  else show('¡Felicidades! 🏆<br>¡Completaste todos los niveles!','Volver al inicio',()=>load(0));
+}
+function hearts(){$('hearts').textContent='❤️'.repeat(lives)+'🖤'.repeat(Math.max(0,3-lives));}
+function loseLife(){
+  if(busy||won)return;
+  busy=true;queue=[];lives--;hurtT=performance.now();
+  const w=$('wrap'),fl=$('flash'),h=$('hearts');
+  fl.textContent='💔';
+  [w,fl,h].forEach((el,i)=>{const c=['shake','on','hit'][i];el.classList.remove(c);void el.offsetWidth;el.classList.add(c);});
+  hearts();render();
+  setTimeout(()=>{
+    if(lives<=0)show('¡Se acabaron las vidas! 😵<br>Vuelve a empezar este nivel','Intentar de nuevo',()=>load(cur));
+    else load(cur,true);
+  },950);
+}
+function resetPress(){
+  if(busy||won)return;
+  if(history.length===0)load(cur,true); else loseLife();
 }
 
-function updateUI() {
-  levelNumEl.textContent = currentLevel + 1;
-  remainingEl.textContent = remaining;
-}
-
-// ========== DIBUJAR ==========
-function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = '#2a2a4a';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  const rows = grid.length;
-  const cols = grid[0].length;
-
-  for (let sum = 0; sum <= rows + cols; sum++) {
-    for (let y = 0; y < rows; y++) {
-      const x = sum - y;
-      if (x < 0 || x >= cols) continue;
-      if (grid[y][x] === 1) {
-        drawBlock(x, y, COLORS.path);
-      }
-    }
-  }
-  // Jugador
-  drawBlock(player.x, player.y, COLORS.player, TILE_Z + 6);
-}
-
-// ========== MOVIMIENTO ==========
-function tryMove(dx, dy) {
-  if (animating || won) return;
-
-  const nx = player.x + dx;
-  const ny = player.y + dy;
-
-  if (ny < 0 || ny >= grid.length || nx < 0 || nx >= grid[0].length) return;
-  if (grid[ny][nx] !== 1) return;
-
-  animating = true;
-  grid[ny][nx] = 0;
-  remaining--;
-  player.x = nx;
-  player.y = ny;
-
-  updateUI();
-  draw();
-
-  if (remaining === 0) {
-    setTimeout(() => {
-      won = true;
-      showWin();
-    }, 200);
-  }
-
-  setTimeout(() => { animating = false; }, 120);
-}
-
-function showWin() {
-  if (currentLevel < LEVELS.length - 1) {
-    msgTextEl.innerHTML = `¡Muy bien!<br>Nivel ${currentLevel + 1} completado`;
-    btnNext.textContent = 'Siguiente nivel';
-    btnNext.onclick = () => loadLevel(currentLevel + 1);
-  } else {
-    msgTextEl.innerHTML = '¡Felicidades!<br>¡Completaste todos los niveles!';
-    btnNext.textContent = 'Volver al inicio';
-    btnNext.onclick = () => loadLevel(0);
-  }
-  messageEl.style.display = 'block';
-}
-
-// ========== CONTROLES CORREGIDOS (solo flechas) ==========
-// Mapeo pensado para que se sienta natural en isométrica:
-// ↑ = arriba-derecha en pantalla
-// ↓ = abajo-izquierda
-// ← = arriba-izquierda
-// → = abajo-derecha
-
-document.addEventListener('keydown', e => {
-  if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
-    e.preventDefault();
-  }
-
-  switch(e.key) {
-    case 'ArrowUp':    tryMove(0, -1); break;  // hacia arriba en el grid
-    case 'ArrowDown':  tryMove(0,  1); break;
-    case 'ArrowLeft':  tryMove(-1, 0); break;
-    case 'ArrowRight': tryMove( 1, 0); break;
-  }
+// Dos modos de flechas (botón "Flechas"): A = ↑↖ ←↙ →↗ ↓↘   B = ↑↗ ←↖ →↘ ↓↙
+const MAPS=[{up:[-1,0],down:[1,0],left:[0,1],right:[0,-1]},{up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]}];
+try{mode=+localStorage.getItem('mj_mode')||0;}catch(e){}
+function modeLabel(){$('btn-mode').textContent=mode?'🎮 Flechas B: ↑↗ ←↖ →↘ ↓↙':'🎮 Flechas A: ↑↖ ←↙ →↗ ↓↘';}
+$('btn-mode').onclick=()=>{mode^=1;try{localStorage.setItem('mj_mode',mode);}catch(e){}modeLabel();canvas.focus();};
+modeLabel();
+const KN={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+document.addEventListener('keydown',e=>{
+  const n=KN[e.key];
+  if(n){e.preventDefault();if(e.repeat)return;const d=MAPS[mode][n];enqueue(d[0],d[1]);}
+  else if(e.key==='z'||e.key==='Z')undo();
+  else if(e.key==='r'||e.key==='R')resetPress();
 });
-
-// Soporte táctil (swipe)
-let touchStartX = 0, touchStartY = 0;
-canvas.addEventListener('touchstart', e => {
-  const t = e.changedTouches[0];
-  touchStartX = t.clientX;
-  touchStartY = t.clientY;
-}, {passive: true});
-
-canvas.addEventListener('touchend', e => {
-  const t = e.changedTouches[0];
-  const dx = t.clientX - touchStartX;
-  const dy = t.clientY - touchStartY;
-  const absX = Math.abs(dx);
-  const absY = Math.abs(dy);
-  if (Math.max(absX, absY) < 30) return;
-
-  if (absX > absY) {
-    tryMove(dx > 0 ? 1 : -1, 0);
-  } else {
-    tryMove(0, dy > 0 ? 1 : -1);
-  }
-}, {passive: true});
-
-// Botones
-btnReset.onclick = () => loadLevel(currentLevel);
-btnMenu.onclick = () => {
-  const n = prompt(`Elige un nivel (1-${LEVELS.length}):`, currentLevel + 1);
-  if (n !== null) {
-    const idx = parseInt(n) - 1;
-    if (idx >= 0 && idx < LEVELS.length) loadLevel(idx);
-  }
+// Botones diagonales (exactos: cada botón es una diagonal del tablero)
+document.querySelectorAll('#pad button').forEach(b=>b.addEventListener('pointerdown',e=>{
+  e.preventDefault();const [dx,dy]=b.dataset.d.split(',').map(Number);enqueue(dx,dy);}));
+// Deslizar: horizontal/vertical usa el modo de flechas; diagonal usa el cuadrante
+let sx=0,sy=0,sid=null;
+canvas.addEventListener('pointerdown',e=>{sx=e.clientX;sy=e.clientY;sid=e.pointerId;canvas.focus();});
+canvas.addEventListener('pointercancel',()=>{sid=null;});
+canvas.addEventListener('pointerup',e=>{
+  if(sid!==e.pointerId)return;sid=null;
+  const dx=e.clientX-sx,dy=e.clientY-sy,ax=Math.abs(dx),ay=Math.abs(dy);
+  if(Math.max(ax,ay)<28)return;
+  let d;
+  if(ax>ay*2.2)d=MAPS[mode][dx>0?'right':'left'];
+  else if(ay>ax*2.2)d=MAPS[mode][dy>0?'down':'up'];
+  else if(dx>0)d=dy<0?[0,-1]:[1,0];
+  else d=dy<0?[-1,0]:[0,1];
+  enqueue(d[0],d[1]);
+});
+$('btn-reset').onclick=resetPress;
+$('btn-undo').onclick=undo;
+// Pista: busca una solución desde la posición actual y marca la siguiente casilla
+let hintCell=null,hintN=0;
+function findNext(){
+  const g=grid.map(r=>r.slice());let c=0;
+  function d(x,y,n){if(n===0)return true;if(++c>400000)return false;
+    for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){const a=x+dx,b=y+dy;
+      if(b>=0&&b<g.length&&a>=0&&a<g[0].length&&g[b][a]===1){g[b][a]=0;const ok=d(a,b,n-1);g[b][a]=1;if(ok){if(x===pl.x&&y===pl.y&&n===remaining)hintCell={x:a,y:b};return true;}}}
+    return false;}
+  hintCell=null;d(pl.x,pl.y,remaining);return hintCell;
+}
+$('btn-hint').onclick=()=>{
+  if(won||busy)return;
+  if(!findNext()){show('Hmm… desde aquí no hay solución 🤔<br>Prueba con Deshacer','Entendido',()=>{$('message').style.display='none';});return;}
+  hintN=0;const iv=setInterval(()=>{hintN++;render();if(hintN>8){clearInterval(iv);hintCell=null;render();}},250);
 };
 
-// Hacer que el canvas reciba el foco al hacer clic
-canvas.addEventListener('click', () => canvas.focus());
+// Selector de niveles
+LEVELS.forEach((_,i)=>{const b=document.createElement('button');b.textContent=i+1;b.onclick=()=>load(i);$('levels').appendChild(b);});
 
-// Ajustar tamaño
-function resize() {
-  const maxW = Math.min(640, window.innerWidth - 20);
-  const scale = maxW / 640;
-  canvas.style.width = maxW + 'px';
-  canvas.style.height = (480 * scale) + 'px';
-}
-window.addEventListener('resize', resize);
-resize();
-
-// Iniciar
-loadLevel(0);
+// Tamaño responsivo
+function resize(){const w=Math.min(640,window.innerWidth-16);canvas.style.width=w+'px';canvas.style.height=(w*.75)+'px';}
+addEventListener('resize',resize);resize();
+load(0);
 </script>
 </body>
 </html>
